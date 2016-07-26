@@ -86,7 +86,7 @@ class Worker(object):
         self.commit(meta)
 
     def commit(self, meta):
-        session = self.cass_cluster.connect("worker")
+        session = self.cass_cluster.connect("prondata")
         query = session.prepare(INSERT_REDDIT_QUERY)
         session.execute(query.bind(meta))
         self.redis.sadd("worker:done", meta["image"])
