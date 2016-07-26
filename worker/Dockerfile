@@ -12,4 +12,4 @@ RUN DEBIAN_FRONTEND=noninteractive CASS_DRIVER_NO_CYTHON=1 apt-get -y update \
 COPY . /app
 RUN pypy3 setup.py install
 
-CMD ["pypy3", "crawler"]
+CMD ["pypy3", "worker"]

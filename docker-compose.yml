@@ -10,8 +10,8 @@ services:
     image: redis:3.2.1-alpine
     restart: always
   
-  crawler:
-    build: crawler/
+  worker:
+    build: worker/
     links:
       - cassandra
       - redis

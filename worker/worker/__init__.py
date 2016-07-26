@@ -12,10 +12,10 @@ from classtools import reify
 from PIL import Image
 from redis import StrictRedis
 
-from crawler.model import ensure_init, INSERT_REDDIT_QUERY
+from worker.model import ensure_init, INSERT_REDDIT_QUERY
 
 
-class Crawler(object):
+class Worker(object):
     def __init__(self):
         self.cass_cluster = Cluster(
             os.environ.get("CASSANDRA_HOST", "localhost").split(","),
@@ -25,11 +25,11 @@ class Crawler(object):
         ensure_init(self.cass_cluster)
 
     def run(self):
-        print("Crawler main loop started!")
+        print("Worker main loop started!")
 
         while True:
             try:
-                data = self.redis.blpop("crawl:imagequeue")[1]
+                data = self.redis.blpop("worker:imagequeue")[1]
                 meta = json.loads(data)
                 self.process(meta)
             except json.JSONDecodeError:
@@ -45,7 +45,7 @@ class Crawler(object):
                 print(str(e))
                 print(data)
                 print("-" * 30)
-                self.redis.rpush("crawl:imagequeue", data)
+                self.redis.rpush("worker:imagequeue", data)
 
             time.sleep(0.2)
 
@@ -62,7 +62,7 @@ class Crawler(object):
             print(meta)
             return
 
-        if self.redis.sismember("crawl:done", meta["image"]):
+        if self.redis.sismember("worker:done", meta["image"]):
             return
 
         print("Processing image %s" % (meta["image"]))
@@ -86,10 +86,10 @@ class Crawler(object):
         self.commit(meta)
 
     def commit(self, meta):
-        session = self.cass_cluster.connect("crawler")
+        session = self.cass_cluster.connect("worker")
         query = session.prepare(INSERT_REDDIT_QUERY)
         session.execute(query.bind(meta))
-        self.redis.sadd("crawl:done", meta["image"])
+        self.redis.sadd("worker:done", meta["image"])
 
     @reify
     def redis(self) -> StrictRedis:

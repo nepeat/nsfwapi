@@ -40,7 +40,7 @@ def fetch_reddit(subreddit):
             )
         ):
             print("Ignoring URL %s." % (url))
-            redis.sadd("crawler:ignored", url)
+            redis.sadd("worker:ignored", url)
             continue
         redis.lpush("crawl:imagequeue", json.dumps({
             "image": url,

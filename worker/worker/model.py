@@ -1,7 +1,7 @@
 from cassandra import InvalidRequest
 
 CREATE_KEYSPACE = ("""
-    CREATE KEYSPACE IF NOT EXISTS crawler WITH replication = {
+    CREATE KEYSPACE IF NOT EXISTS worker WITH replication = {
       'class': 'SimpleStrategy',
       'replication_factor': '1'
     };
@@ -28,9 +28,9 @@ def ensure_init(cass_cluster):
     session = cass_cluster.connect()
 
     try:
-        session.set_keyspace("crawler")
+        session.set_keyspace("worker")
     except InvalidRequest:
         session.execute(CREATE_KEYSPACE)
-        session.set_keyspace("crawler")
+        session.set_keyspace("worker")
 
     session.execute(CREATE_TABLE)
