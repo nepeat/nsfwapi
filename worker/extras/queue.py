@@ -1,8 +1,9 @@
-import praw
-import os
 import json
-from redis import StrictRedis
+import os
 from urllib.parse import urlparse
+
+import praw
+from redis import StrictRedis
 
 reddit = praw.Reddit(user_agent="/u/nepeat image post hash scraper")
 

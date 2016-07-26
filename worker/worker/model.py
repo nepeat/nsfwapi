@@ -1,5 +1,6 @@
 from cassandra import InvalidRequest
 
+
 CREATE_KEYSPACE = ("""
     CREATE KEYSPACE IF NOT EXISTS prondata WITH replication = {
       'class': 'SimpleStrategy',

@@ -1,8 +1,9 @@
 import json
 import os
 import time
-from io import BytesIO
 import uuid
+from io import BytesIO
+
 import imagehash
 import praw
 import requests
@@ -12,7 +13,7 @@ from classtools import reify
 from PIL import Image
 from redis import StrictRedis
 
-from worker.model import ensure_init, INSERT_REDDIT_QUERY
+from worker.model import INSERT_REDDIT_QUERY, ensure_init
 
 
 class Worker(object):
