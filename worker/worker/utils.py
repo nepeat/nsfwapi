@@ -9,6 +9,9 @@ def safe_download(url, size_limit=MAX_SIZE) -> BytesIO:
     size = 0
     content = BytesIO()
 
+    if r.status_code not in (200, 302):
+        return None
+
     for chunk in r.iter_content(2048):
         size += len(chunk)
         content.write(chunk)
