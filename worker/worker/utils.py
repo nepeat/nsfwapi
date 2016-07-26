@@ -1,4 +1,5 @@
 from io import BytesIO
+
 import requests
 
 MAX_SIZE = 1024 * 1024 * 50  # 50 MB

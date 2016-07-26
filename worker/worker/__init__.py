@@ -13,6 +13,7 @@ from redis import StrictRedis
 from worker.model import INSERT_LINK_QUERY, ensure_init
 from worker.utils import safe_download
 
+
 class Worker(object):
     def __init__(self):
         self.cass_cluster = Cluster(
