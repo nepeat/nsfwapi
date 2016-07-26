@@ -1,3 +1,4 @@
+import code
 import json
 import os
 from urllib.parse import urlparse
@@ -21,7 +22,7 @@ redis = StrictRedis(
 
 
 def fetch_reddit(subreddit):
-    for post in reddit.get_subreddit(subreddit).get_hot():
+    for post in reddit.get_subreddit(subreddit).get_hot(limit=None):
         url = post.url.strip()
         if "imgur.com" in url.lower():
             if url.lower().endswith(".gifv"):
@@ -43,9 +44,12 @@ def fetch_reddit(subreddit):
             print("Ignoring URL %s." % (url))
             redis.sadd("worker:ignored", url)
             continue
-        redis.lpush("crawl:imagequeue", json.dumps({
+        redis.lpush("worker:imagequeue", json.dumps({
             "image": url,
             "source": post.permalink,
             "karma": post.score,
             "subreddit": subreddit
         }))
+
+if __name__ == "__main__":
+    code.interact(local=locals())
