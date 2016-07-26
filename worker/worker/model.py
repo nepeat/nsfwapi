@@ -9,20 +9,19 @@ CREATE_KEYSPACE = ("""
 """)
 
 CREATE_TABLE = ("""
-    CREATE TABLE IF NOT EXISTS reddit (
+    CREATE TABLE IF NOT EXISTS links (
     id timeuuid,
-    subreddit varchar,
     image_url varchar,
     source_url varchar,
-    karma int,
+    tags set<text>,
     phash varchar,
     PRIMARY KEY (phash, source_url)
     )
 """)
 
-INSERT_REDDIT_QUERY = ("""
-    INSERT INTO reddit (id, image_url, source_url, phash, karma, subreddit)
-    VALUES (:id, :image, :source, :phash, :karma, :subreddit)
+INSERT_LINK_QUERY = ("""
+    INSERT INTO links (id, image_url, source_url, phash, tags)
+    VALUES (:id, :image, :source, :phash, :tags)
 """)
 
 def ensure_init(cass_cluster):
