@@ -1,5 +1,7 @@
-from cassandra import InvalidRequest
+import time
 
+from cassandra import InvalidRequest
+from cassandra.cluster import NoHostAvailable
 from schema import Optional, Schema, Use
 
 CREATE_KEYSPACE = ("""
@@ -36,7 +38,13 @@ META_SCHEMA = Schema({
 })
 
 def ensure_init(cass_cluster):
-    session = cass_cluster.connect()
+    try:
+        session = cass_cluster.connect()
+    except NoHostAvailable as e:
+        print("Failed to connect to Cassandra, attempting reconnection in 5 seconds.")
+        print(str(e))
+        time.sleep(5)
+        return ensure_init(cass_cluster)
 
     try:
         session.set_keyspace("prondata")
