@@ -15,13 +15,14 @@ CREATE_TABLE = ("""
     source_url varchar,
     tags set<text>,
     phash varchar,
+    nsfw boolean,
     PRIMARY KEY (phash, source_url)
     )
 """)
 
 INSERT_LINK_QUERY = ("""
-    INSERT INTO links (id, image_url, source_url, phash, tags)
-    VALUES (:id, :image, :source, :phash, :tags)
+    INSERT INTO links (id, image_url, source_url, phash, tags, nsfw)
+    VALUES (:id, :image, :source, :phash, :tags, :nsfw)
 """)
 
 def ensure_init(cass_cluster):

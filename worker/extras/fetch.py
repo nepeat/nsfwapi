@@ -1,10 +1,11 @@
 import code
-import json
 import os
 from urllib.parse import urlparse
 
 import praw
-from redis import StrictRedis
+
+from worker.connections import create_redis
+from worker.tasks import process
 
 reddit = praw.Reddit(user_agent="/u/nepeat image post hash scraper")
 
@@ -14,14 +15,12 @@ if "REDDIT_USERNAME" in os.environ and "REDDIT_PASSWORD" in os.environ:
         os.environ["REDDIT_PASSWORD"]
     )
 
-redis = StrictRedis(
-    host=os.environ.get("REDIS_HOST", "localhost"),
-    port=os.environ.get("REDIS_PORT", 6379),
-    decode_responses=True,
-)
+redis = create_redis()
 
 
 def fetch_reddit(subreddit):
+    nsfw = redis.sismember("nsfw", subreddit)
+
     for post in reddit.get_subreddit(subreddit).get_hot(limit=None):
         url = post.url.strip()
         if "imgur.com" in url.lower():
@@ -44,12 +43,13 @@ def fetch_reddit(subreddit):
             print("Ignoring URL %s." % (url))
             redis.sadd("worker:ignored", url)
             continue
-        redis.lpush("worker:imagequeue", json.dumps({
+        process.delay({
             "image": url,
             "source": post.permalink,
             "karma": post.score,
-            "subreddit": subreddit
-        }))
+            "subreddit": subreddit,
+            "nsfw": nsfw
+        })
 
 if __name__ == "__main__":
     code.interact(local=locals())
