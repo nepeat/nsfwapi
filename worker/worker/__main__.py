@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -5,6 +6,9 @@ from rq import Connection, Worker
 
 from worker.connections import create_cassandra
 from worker.model import ensure_init
+
+if "DEBUG" in os.environ:
+    logging.basicConfig(format=logging.DEBUG)
 
 if __name__ == "__main__":
     sentry_dsn = os.environ.get("SENTRY_DSN", None)
@@ -19,8 +23,9 @@ if __name__ == "__main__":
 
         if sentry_dsn:
             from raven import Client
+            from raven.transport.requests import RequestsHTTPTransport
             from rq.contrib.sentry import register_sentry
-            client = Client(sentry_dsn)
+            client = Client(sentry_dsn, transport=RequestsHTTPTransport)
             register_sentry(client, w)
 
         w.work()
