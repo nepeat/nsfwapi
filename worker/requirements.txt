@@ -4,3 +4,7 @@ rq
 cassandra-driver
 classtools
 imagehash
+raven
+schema
+requests[security]
+certifi
