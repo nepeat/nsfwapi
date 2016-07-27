@@ -3,6 +3,7 @@ import os
 from urllib.parse import urlparse
 
 import praw
+from imgurpython import ImgurClient
 
 from worker.connections import create_redis
 from worker.tasks import process
@@ -15,25 +16,44 @@ if "REDDIT_USERNAME" in os.environ and "REDDIT_PASSWORD" in os.environ:
         os.environ["REDDIT_PASSWORD"]
     )
 
+if "IMGUR_ID" not in os.environ or "IMGUR_SECRET" not in os.environ:
+    raise Exception("Imgur API keys required.")
+
+imgur = ImgurClient(
+    os.environ["IMGUR_ID"],
+    os.environ["IMGUR_SECRET"],
+    mashape_key=os.environ.get("MASHAPE_KEY", None)
+)
+
 redis = create_redis()
 
 
 def fetch_reddit(subreddit):
-    nsfw = redis.sismember("nsfw", subreddit)
+    sub = reddit.get_subreddit(subreddit)
 
-    for post in reddit.get_subreddit(subreddit).get_hot(limit=None):
+    if sub.over18:
+        redis.sadd("nsfw", subreddit)
+
+    nsfw = redis.sismember("nsfw", subreddit) or sub.over18
+
+    for post in sub.get_hot(limit=None):
         url = post.url.strip()
+        parsed = urlparse(url)
+
         if "imgur.com" in url.lower():
             if url.lower().endswith(".gifv"):
                 url = url.replace(".gifv", ".gif")
-        parsed = urlparse(url)
+
         if parsed.netloc == "imgur.com":
             if parsed.path.rindex("/") != 0:
+                print("Ignoring album %s." % (url))
+                redis.sadd("worker:ignored", url)
                 continue
             path_with_extension = parsed.path if "." in parsed.path else parsed.path + ".jpg"
             url = "https://i.imgur.com" + path_with_extension
+
         if (
-            parsed.netloc.lower() not in ("imgur.com", "i.reddituploads.com", "imgur.com") and
+            parsed.netloc.lower() not in ("imgur.com", "i.reddituploads.com", "i.imgur.com") and
             (
                 not url.lower().endswith(".jpg") and
                 not url.lower().endswith(".png") and
@@ -43,6 +63,7 @@ def fetch_reddit(subreddit):
             print("Ignoring URL %s." % (url))
             redis.sadd("worker:ignored", url)
             continue
+
         process.delay({
             "image": url,
             "source": post.permalink,

@@ -8,3 +8,4 @@ raven
 schema
 requests[security]
 certifi
+imgurpython
