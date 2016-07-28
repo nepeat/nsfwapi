@@ -14,7 +14,7 @@ redis = create_redis()
 def process(meta: dict):
     meta = META_SCHEMA.validate(meta)
 
-    if redis.sismember("worker:done", meta["image"]):
+    if redis.sismember("worker:done", meta["image"]) and redis.sismember("worker:done", meta["source"]):
         return
 
     print("Processing image %s" % (meta["image"]))
@@ -41,4 +41,4 @@ def process(meta: dict):
 @job("low", connection=redis, result_ttl=0)
 def save(meta: dict):
     Link.create(**meta)
-    redis.sadd("worker:done", meta["image"])
+    redis.sadd("worker:done", meta["image"], meta["source"])
