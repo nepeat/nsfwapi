@@ -1,8 +1,10 @@
-import time
+import os
 
-from cassandra import InvalidRequest
-from cassandra.cluster import NoHostAvailable
+from cassandra.cqlengine import columns, connection
+from cassandra.cqlengine.management import sync_table
+from cassandra.cqlengine.models import Model
 from schema import Optional, Schema, Use
+
 
 CREATE_KEYSPACE = ("""
     CREATE KEYSPACE IF NOT EXISTS prondata WITH replication = {
@@ -11,22 +13,18 @@ CREATE_KEYSPACE = ("""
     };
 """)
 
-CREATE_TABLE = ("""
-    CREATE TABLE IF NOT EXISTS links (
-    id timeuuid,
-    image_url varchar,
-    source_url varchar,
-    tags set<text>,
-    phash varchar,
-    nsfw boolean,
-    PRIMARY KEY (phash, source_url)
-    )
-""")
+class Link(Model):
+    id = columns.TimeUUID()
+    phash = columns.Text(primary_key=True)
+    image = columns.Text()
+    source = columns.Text(primary_key=True)
+    tags = columns.Set(columns.Text())
+    nsfw = columns.Boolean()
 
-INSERT_LINK_QUERY = ("""
-    INSERT INTO links (id, image_url, source_url, phash, tags, nsfw)
-    VALUES (:id, :image, :source, :phash, :tags, :nsfw)
-""")
+class UnknownLink(Model):
+    id = columns.TimeUUID(primary_key=True)
+    image_url = columns.Text()
+    source_url = columns.Text()
 
 META_SCHEMA = Schema({
     "image": str,
@@ -37,19 +35,12 @@ META_SCHEMA = Schema({
     Optional("subreddit"): str
 })
 
-def ensure_init(cass_cluster):
-    try:
-        session = cass_cluster.connect()
-    except NoHostAvailable as e:
-        print("Failed to connect to Cassandra, attempting reconnection in 5 seconds.")
-        print(str(e))
-        time.sleep(5)
-        return ensure_init(cass_cluster)
+connection.setup(
+    hosts=os.environ.get("CASSANDRA_HOST", "localhost").split(","),
+    default_keyspace="prondata",
+    protocol_version=4,
+    retry_connect=True
+)
 
-    try:
-        session.set_keyspace("prondata")
-    except InvalidRequest:
-        session.execute(CREATE_KEYSPACE)
-        session.set_keyspace("prondata")
-
-    session.execute(CREATE_TABLE)
+sync_table(Link)
+sync_table(UnknownLink)

@@ -4,12 +4,11 @@ import imagehash
 from PIL import Image
 from rq.decorators import job
 
-from worker.connections import create_cassandra, create_redis
-from worker.model import INSERT_LINK_QUERY, META_SCHEMA
+from worker.connections import create_redis
+from worker.model import META_SCHEMA, Link
 from worker.utils import safe_download
 
 redis = create_redis()
-cass_cluster = create_cassandra()
 
 @job("fetch", connection=redis, timeout=30, result_ttl=0)
 def process(meta: dict):
@@ -41,7 +40,5 @@ def process(meta: dict):
 
 @job("low", connection=redis, result_ttl=0)
 def save(meta: dict):
-    session = cass_cluster.connect("prondata")
-    query = session.prepare(INSERT_LINK_QUERY)
-    session.execute(query.bind(meta))
+    Link.create(**meta)
     redis.sadd("worker:done", meta["image"])
