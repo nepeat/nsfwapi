@@ -21,6 +21,7 @@ services:
       REDIS_PORT: 6379
       CASSANDRA_HOST: cassandra
       CASSANDRA_PORT: 9042
+      CQLENG_ALLOW_SCHEMA_MANAGEMENT: True
     env_file: .env
 volumes:
   cassandra:
