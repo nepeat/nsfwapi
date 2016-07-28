@@ -11,7 +11,7 @@ from worker.utils import safe_download
 redis = create_redis()
 cass_cluster = create_cassandra()
 
-@job("fetch", connection=redis, timeout=30)
+@job("fetch", connection=redis, timeout=30, result_ttl=0)
 def process(meta: dict):
     meta = META_SCHEMA.validate(meta)
 
@@ -39,7 +39,7 @@ def process(meta: dict):
 
     save.delay(meta)
 
-@job("low", connection=redis)
+@job("low", connection=redis, result_ttl=0)
 def save(meta: dict):
     session = cass_cluster.connect("prondata")
     query = session.prepare(INSERT_LINK_QUERY)
