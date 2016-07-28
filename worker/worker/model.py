@@ -26,6 +26,11 @@ class UnknownLink(Model):
     image_url = columns.Text()
     source_url = columns.Text()
 
+class Subreddit(Model):
+    id = columns.TimeUUID()
+    subreddit = columns.Text(primary_key=True)
+    nsfw = columns.nsfw()
+
 META_SCHEMA = Schema({
     "image": str,
     "source": str,

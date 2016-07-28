@@ -1,6 +1,7 @@
 import code
 import os
 import re
+import uuid
 from urllib.parse import urlparse
 
 import praw
@@ -8,6 +9,7 @@ from imgurpython import ImgurClient
 from imgurpython.helpers.error import ImgurClientError
 
 from worker.connections import create_redis
+from worker.model import Subreddit, UnknownLink
 from worker.tasks import process
 
 # Connections
@@ -41,12 +43,20 @@ def fetch_subreddit(subreddit, top=True, limit=None):
     sub = reddit.get_subreddit(subreddit)
 
     if sub.over18:
-        redis.sadd("nsfw", subreddit)
-
-    nsfw = redis.sismember("nsfw", subreddit) or sub.over18
+        Subreddit.create(
+            id=uuid.uuid1(),
+            subreddit=subreddit,
+            nsfw=True
+        )
+    else:
+        Subreddit.create(
+            id=uuid.uuid1(),
+            subreddit=subreddit,
+            nsfw=False
+        )
 
     for post in sub.get_hot(limit=limit):
-        submit_reddit_post(post, subreddit, nsfw)
+        submit_reddit_post(post, subreddit, sub.over18)
 
     if top:
         topfuncs = [
@@ -58,7 +68,7 @@ def fetch_subreddit(subreddit, top=True, limit=None):
         ]
         for func in topfuncs:
             for post in func(limit=limit):
-                submit_reddit_post(post, subreddit, nsfw)
+                submit_reddit_post(post, subreddit, sub.over18)
 
 def fetch_imgur_album(album, source=None, nsfw=False, **kwargs):
     try:
@@ -93,14 +103,18 @@ def submit_reddit_post(post, subreddit, nsfw=False):
                 for album in albums:
                     fetch_imgur_album(
                         album,
-                        post.permalink,
-                        nsfw,
+                        source=post.permalink,
+                        nsfw=nsfw,
                         subreddit=subreddit,
                         karma=post.score
                     )
             else:
+                UnknownLink.create(
+                    id=uuid.uuid1(),
+                    image_url=url,
+                    source_url=post.permalink
+                )
                 print("Ignoring unknown imgur URL %s." % (url))
-                redis.sadd("worker:ignored", url)
             return
 
         path_with_extension = parsed.path if "." in parsed.path else parsed.path + ".jpg"
@@ -114,8 +128,12 @@ def submit_reddit_post(post, subreddit, nsfw=False):
             not url.lower().endswith(".gif")
         )
     ):
+        UnknownLink.create(
+            id=uuid.uuid1(),
+            image_url=url,
+            source_url=post.permalink
+        )
         print("Ignoring URL %s." % (url))
-        redis.sadd("worker:ignored", url)
         return
 
     process.delay({
