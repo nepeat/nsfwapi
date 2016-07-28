@@ -5,13 +5,14 @@ services:
     restart: always
     volumes:
       - cassandra:/var/lib/cassandra
-  
+
   redis:
     image: redis:3.2.1-alpine
     restart: always
   
   worker:
     build: worker/
+    image: nepeat/nsfwapi-worker
     links:
       - cassandra
       - redis
