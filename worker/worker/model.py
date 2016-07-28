@@ -29,7 +29,7 @@ class UnknownLink(Model):
 class Subreddit(Model):
     id = columns.TimeUUID()
     subreddit = columns.Text(primary_key=True)
-    nsfw = columns.nsfw()
+    nsfw = columns.Boolean()
 
 META_SCHEMA = Schema({
     "image": str,
