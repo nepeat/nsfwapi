@@ -5,7 +5,9 @@ import requests
 MAX_SIZE = 1024 * 1024 * 50  # 50 MB
 
 def safe_download(url, size_limit=MAX_SIZE) -> BytesIO:
-    r = requests.get(url, stream=True)
+    r = requests.get(url, stream=True, headers={
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.30 Safari/537.36"
+    })
     size = 0
     content = BytesIO()
 
