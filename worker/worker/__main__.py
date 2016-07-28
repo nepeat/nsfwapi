@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     redis = create_redis()
 
-    queues = sys.argv[1:] or ["fetch", "low"]
+    queues = sys.argv[1:] or ["low", "fetch"]
 
     w = Worker(
         queues=queues,
